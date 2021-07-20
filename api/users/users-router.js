@@ -1,44 +1,102 @@
 const express = require('express');
-
-// You will need `users-model.js` and `posts-model.js` both
-// The middleware functions also need to be required
-
 const router = express.Router();
+db = require('./userDb');
+posts = require('../posts/postDb');
 
-router.get('/', (req, res) => {
-  // RETURN AN ARRAY WITH ALL THE USERS
+router.post('/', validateUser, (req, res) => {
+  const { userName } = req.body;
+
+  db.insert({ name: userName })
+    .then(user => {
+      res.status(200).json(user);
+    })
+    .catch(err => {
+      res.status(500).json({ message: "Could not add user" })
+    })
+
+    router.post('/:id/posts', validateUserId, validatePost, (req, res) => {
+      posts.insert({ user_id: req.params.id, text: req.body.text })
+        .then(post => {
+          res.status(200).json({ message: post })
+        })
+        .catch(err => {
+          res.status(500).json({ message: "Could not post" })
+        })
+    });
+
+  db.get()
+    .then(users => {
+      res.status(200).json(users)
+    })
+    .catch(err => {
+      res.status(500).json({ message: "Couldn't get from Data base" })
+    })
 });
 
-router.get('/:id', (req, res) => {
-  // RETURN THE USER OBJECT
-  // this needs a middleware to verify user id
+  router.get('/:id', validateUserId, (req, res) => {
+    let id = req.params.id;
+  
 });
 
-router.post('/', (req, res) => {
-  // RETURN THE NEWLY CREATED USER OBJECT
-  // this needs a middleware to check that the request body is valid
+db.getById(id)
+    .then(user => {
+      res.status(200).json(user);
+    })
+    .catch(err => {
+      res.status(500).json({ error: "The user could not be retrieved." });
+    });
+
+    router.get('/:id/posts', validateUserId, (req, res) => {
+      db.getUserPosts(req.user.id)
+        .then(posts => {
+          if (posts.length > 0) {
+            res.status(200).json(posts);
+          }
+          else {
+            res.status(400).json({ message: "This user has no posts" });
+          }
+        })
+        .catch(err => {
+          res.status(500).json({ message: "Couldn't get posts" })
+        })
+    });
+
+    router.put('/:id', validateUserId, validateUser, (req, res) => {
+      db.update(req.user.id, { name: req.body.name })
+        .then(() => {
+          db.getById(req.user.id)
+            .then(user => {
+              res.status(200).json(user);
+            })
+            .catch(err => {
+              res.status(500).json({ message: "Could not get updated user." });
+            });
+        })
+        .catch(err => {
+          res.status(500).json({ message: "Could not update user." });
+        });
+    });
+
+router.post('/:id/posts', validateUserId, validatePost, (req, res) => {
+  posts.insert({ user_id: req.params.id, text: req.body.text })
+    .then(post => {
+      res.status(200).json({ message: post })
+    })
+    .catch(err => {
+      res.status(500).json({ message: "Could not post" })
+    })
 });
 
-router.put('/:id', (req, res) => {
-  // RETURN THE FRESHLY UPDATED USER OBJECT
-  // this needs a middleware to verify user id
-  // and another middleware to check that the request body is valid
-});
-
-router.delete('/:id', (req, res) => {
-  // RETURN THE FRESHLY DELETED USER OBJECT
-  // this needs a middleware to verify user id
-});
 
 router.get('/:id/posts', (req, res) => {
-  // RETURN THE ARRAY OF USER POSTS
-  // this needs a middleware to verify user id
+  db.getById(id)
+    .then(user => {
+      res.status(200).json(user);
+    })
+    .catch(err => {
+      res.status(500).json({ error: "The user could not be retrieved." });
+    })
 });
 
-router.post('/:id/posts', (req, res) => {
-  // RETURN THE NEWLY CREATED USER POST
-  // this needs a middleware to verify user id
-  // and another middleware to check that the request body is valid
-});
 
-// do not forget to export the router
+module.exports=router
